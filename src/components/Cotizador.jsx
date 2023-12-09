@@ -9,38 +9,30 @@ function Cotizador() {
   const [precioEstimado, setPrecioEstimado] = useState(0);
   const [opcionesPropiedad, setOpcionesPropiedad] = useState([]);
   const [opcionesUbicacion, setOpcionesUbicacion] = useState([]);
-
-  const datosPropiedad = [
-    { tipo: 'Casa', factor: 1.09 },
-    { tipo: 'P.H.', factor: 1.05 },
-    { tipo: 'Depto. Edificio', factor: 1.02 },
-    { tipo: 'Barrio Privado', factor: 1.19 },
-    { tipo: 'Oficina', factor: 2.39 },
-    { tipo: 'Local Comercial', factor: 1.41 },
-    { tipo: 'Depósito Logística', factor: 1.92 }
-  ];
-
-  const datosUbicacion = [
-    { tipo: 'CABA', factor: 1.13 },
-    { tipo: 'Tandil', factor: 1.04 },
-    { tipo: 'Costa Atlántica', factor: 1.29 },
-    { tipo: 'Patagonia', factor: 1.00 },
-  ];
+  const [mostrarBotonGuardar, setMostrarBotonGuardar] = useState(false);
 
   useEffect(() => {
-    // Establece las opciones de propiedad y ubicación directamente
-    setOpcionesPropiedad(datosPropiedad);
-    setOpcionesUbicacion(datosUbicacion);
+cargarDatos();
   }, []);
 
+  const cargarDatos = () => {
+    fetch("./datos/datosPropiedad.json")
+      .then(response => response.json())
+      .then(data => setOpcionesPropiedad(data))
+      .catch(error => console.error('Error al cargar datosPropiedad.json:', error));
+
+    fetch("./datos/datosUbicacion.json")
+      .then(response => response.json())
+      .then(data => setOpcionesUbicacion(data))
+      .catch(error => console.error('Error al cargar datosUbicacion.json:', error));
+  };
+
   const cotizarPoliza = () => {
-    // Encuentra el objeto en opcionesPropiedad que coincide con el tipo seleccionado
     const propiedadSeleccionada = opcionesPropiedad.find(opcion => opcion.tipo === tipoPropiedad);
     const ubicacionSeleccionada = opcionesUbicacion.find(opcion => opcion.tipo === ubicacion )
-
+  
 
     if (propiedadSeleccionada && ubicacionSeleccionada) {
-      // Realiza la cotización multiplicando el factor por los metros cuadrados
       const resultado = propiedadSeleccionada.factor *ubicacionSeleccionada.factor * metrosCuadrados * 100;
       setPrecioEstimado(resultado.toFixed(2));
       const cotizacion = {
@@ -50,17 +42,23 @@ function Cotizador() {
         metrosCuadrados: metrosCuadrados,
         poliza:          resultado,
        }
-       const historial = JSON.parse(localStorage.getItem("historial")) || []
-       historial.push(cotizacion)
-       localStorage.setItem("historial",JSON.stringify(historial))
-       console.log(historial)
        alert("cotizacion realizada con exito")
+       setMostrarBotonGuardar(true);
+       return cotizacion
+      
 
     } else {
-      // Maneja el caso donde no se encuentra la propiedad seleccionada
       alert('Faltan datos,por favor complete el formulario');
     }
-  };
+  }
+
+
+  const guardarEnHistorial= (prop) =>{
+    const historial = JSON.parse(localStorage.getItem("historial")) || []
+    historial.push(prop)
+    localStorage.setItem("historial",JSON.stringify(historial))
+  }
+
 
   return (
     <div>
@@ -108,6 +106,11 @@ function Cotizador() {
       <button onClick={cotizarPoliza}>Cotizar</button>
 
       <h3> Precio estimado: ${precioEstimado}</h3>
+      <div>
+      {mostrarBotonGuardar && (
+        <button onClick={() => guardarEnHistorial(cotizarPoliza())}>Guardar en Historial</button>
+      )}
+    </div>
     </div>
   );
 }
